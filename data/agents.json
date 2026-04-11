@@ -1,0 +1,242 @@
+[
+  {
+    "id": "architect",
+    "name": "Architect",
+    "icon": "🏛️",
+    "color": "#7c3aed",
+    "category": "specialist",
+    "description": "Senior software architect specializing in scalable, maintainable system design, trade-off analysis, and architectural decision records.",
+    "systemPromptFile": "architect.txt",
+    "equippedSkills": []
+  },
+  {
+    "id": "planner",
+    "name": "Planner",
+    "icon": "📋",
+    "color": "#2563eb",
+    "category": "planner",
+    "description": "Expert planning specialist creating comprehensive, actionable implementation plans with phased steps and risk mitigation.",
+    "systemPromptFile": "planner.txt",
+    "equippedSkills": []
+  },
+  {
+    "id": "code-reviewer",
+    "name": "Code Reviewer",
+    "icon": "🔍",
+    "color": "#0891b2",
+    "category": "reviewer",
+    "description": "Senior code reviewer ensuring high standards of code quality, security, and maintainability across all changes.",
+    "systemPromptFile": "code-reviewer.txt",
+    "equippedSkills": []
+  },
+  {
+    "id": "security-reviewer",
+    "name": "Security Reviewer",
+    "icon": "🔒",
+    "color": "#dc2626",
+    "category": "reviewer",
+    "description": "Expert security specialist identifying vulnerabilities, OWASP Top 10 risks, and remediating security issues before production.",
+    "systemPromptFile": "security-reviewer.txt",
+    "equippedSkills": []
+  },
+  {
+    "id": "e2e-runner",
+    "name": "E2E Runner",
+    "icon": "🎭",
+    "color": "#d97706",
+    "category": "specialist",
+    "description": "End-to-end testing specialist creating and executing comprehensive Playwright tests with artifact management and flaky test handling.",
+    "systemPromptFile": "e2e-runner.txt",
+    "equippedSkills": []
+  },
+  {
+    "id": "build-error-resolver",
+    "name": "Build Fixer",
+    "icon": "🔧",
+    "color": "#16a34a",
+    "category": "resolver",
+    "description": "Expert build error resolution specialist fixing TypeScript, compilation, and build errors quickly with minimal changes.",
+    "systemPromptFile": "build-error-resolver.txt",
+    "equippedSkills": []
+  },
+  {
+    "id": "database-reviewer",
+    "name": "DB Reviewer",
+    "icon": "🗄️",
+    "color": "#0d9488",
+    "category": "reviewer",
+    "description": "Expert PostgreSQL specialist focused on query optimization, schema design, security, and performance best practices.",
+    "systemPromptFile": "database-reviewer.txt",
+    "equippedSkills": []
+  },
+  {
+    "id": "doc-updater",
+    "name": "Doc Updater",
+    "icon": "📝",
+    "color": "#9333ea",
+    "category": "specialist",
+    "description": "Documentation specialist keeping codemaps and docs current with the codebase, maintaining accurate and up-to-date content.",
+    "systemPromptFile": "doc-updater.txt",
+    "equippedSkills": []
+  },
+  {
+    "id": "docs-lookup",
+    "name": "Docs Lookup",
+    "icon": "📚",
+    "color": "#0284c7",
+    "category": "specialist",
+    "description": "Documentation specialist answering library and framework questions using live docs via Context7 MCP, not training data.",
+    "systemPromptFile": "docs-lookup.txt",
+    "equippedSkills": []
+  },
+  {
+    "id": "go-reviewer",
+    "name": "Go Reviewer",
+    "icon": "🐹",
+    "color": "#06b6d4",
+    "category": "reviewer",
+    "description": "Senior Go code reviewer ensuring idiomatic Go patterns, concurrency safety, and best practices across all Go code.",
+    "systemPromptFile": "go-reviewer.txt",
+    "equippedSkills": []
+  },
+  {
+    "id": "go-build-resolver",
+    "name": "Go Build Fixer",
+    "icon": "🛠️",
+    "color": "#0891b2",
+    "category": "resolver",
+    "description": "Expert Go build error specialist fixing compilation errors, go vet issues, and linter warnings with surgical precision.",
+    "systemPromptFile": "go-build-resolver.txt",
+    "equippedSkills": []
+  },
+  {
+    "id": "rust-reviewer",
+    "name": "Rust Reviewer",
+    "icon": "⚙️",
+    "color": "#ea580c",
+    "category": "reviewer",
+    "description": "Senior Rust code reviewer ensuring safety, idiomatic patterns, borrow checker compliance, and performance.",
+    "systemPromptFile": "rust-reviewer.txt",
+    "equippedSkills": []
+  },
+  {
+    "id": "rust-build-resolver",
+    "name": "Rust Build Fixer",
+    "icon": "🦀",
+    "color": "#c2410c",
+    "category": "resolver",
+    "description": "Expert Rust build error specialist fixing compilation errors, borrow checker issues, and dependency problems minimally.",
+    "systemPromptFile": "rust-build-resolver.txt",
+    "equippedSkills": []
+  },
+  {
+    "id": "python-reviewer",
+    "name": "Python Reviewer",
+    "icon": "🐍",
+    "color": "#16a34a",
+    "category": "reviewer",
+    "description": "Senior Python code reviewer ensuring Pythonic code, PEP standards, and best practices across all Python code.",
+    "systemPromptFile": "python-reviewer.txt",
+    "equippedSkills": []
+  },
+  {
+    "id": "java-reviewer",
+    "name": "Java Reviewer",
+    "icon": "☕",
+    "color": "#b45309",
+    "category": "reviewer",
+    "description": "Senior Java engineer ensuring idiomatic Java and Spring Boot best practices, clean architecture, and type safety.",
+    "systemPromptFile": "java-reviewer.txt",
+    "equippedSkills": []
+  },
+  {
+    "id": "java-build-resolver",
+    "name": "Java Build Fixer",
+    "icon": "🏗️",
+    "color": "#92400e",
+    "category": "resolver",
+    "description": "Expert Java/Maven/Gradle build error specialist fixing compilation errors and dependency resolution failures surgically.",
+    "systemPromptFile": "java-build-resolver.txt",
+    "equippedSkills": []
+  },
+  {
+    "id": "kotlin-reviewer",
+    "name": "Kotlin Reviewer",
+    "icon": "🎯",
+    "color": "#7c3aed",
+    "category": "reviewer",
+    "description": "Senior Kotlin and Android/KMP code reviewer ensuring idiomatic, safe, and maintainable Kotlin code.",
+    "systemPromptFile": "kotlin-reviewer.txt",
+    "equippedSkills": []
+  },
+  {
+    "id": "kotlin-build-resolver",
+    "name": "Kotlin Build Fixer",
+    "icon": "🔨",
+    "color": "#6d28d9",
+    "category": "resolver",
+    "description": "Expert Kotlin/Gradle build error specialist fixing Kotlin build errors and Gradle configuration issues precisely.",
+    "systemPromptFile": "kotlin-build-resolver.txt",
+    "equippedSkills": []
+  },
+  {
+    "id": "cpp-reviewer",
+    "name": "C++ Reviewer",
+    "icon": "⚡",
+    "color": "#1d4ed8",
+    "category": "reviewer",
+    "description": "Senior C++ code reviewer ensuring modern C++ standards, memory safety, and high-performance best practices.",
+    "systemPromptFile": "cpp-reviewer.txt",
+    "equippedSkills": []
+  },
+  {
+    "id": "cpp-build-resolver",
+    "name": "C++ Build Fixer",
+    "icon": "🔩",
+    "color": "#1e40af",
+    "category": "resolver",
+    "description": "Expert C++ build error specialist fixing compilation errors, CMake issues, and linker warnings with minimal changes.",
+    "systemPromptFile": "cpp-build-resolver.txt",
+    "equippedSkills": []
+  },
+  {
+    "id": "refactor-cleaner",
+    "name": "Refactor Cleaner",
+    "icon": "🧹",
+    "color": "#8b5cf6",
+    "category": "specialist",
+    "description": "Expert refactoring specialist identifying and removing dead code, duplicates, and unused exports to keep the codebase lean.",
+    "systemPromptFile": "refactor-cleaner.txt",
+    "equippedSkills": []
+  },
+  {
+    "id": "tdd-guide",
+    "name": "TDD Guide",
+    "icon": "🧪",
+    "color": "#059669",
+    "category": "specialist",
+    "description": "Test-Driven Development specialist enforcing tests-before-code methodology with comprehensive coverage strategies.",
+    "systemPromptFile": "tdd-guide.txt",
+    "equippedSkills": []
+  },
+  {
+    "id": "harness-optimizer",
+    "name": "Harness Optimizer",
+    "icon": "🚀",
+    "color": "#0f766e",
+    "category": "operator",
+    "description": "Harness optimization operator focused on performance tuning, throughput, and efficiency of multi-agent workflows.",
+    "systemPromptFile": "harness-optimizer.txt",
+    "equippedSkills": []
+  },
+  {
+    "id": "loop-operator",
+    "name": "Loop Operator",
+    "icon": "🔄",
+    "color": "#475569",
+    "category": "operator",
+    "description": "Continuous loop operation specialist managing iterative agent cycles, retry logic, and persistent workflow execution.",
+    "systemPromptFile": "loop-operator.txt",
+    "equippedSkills": []
+  }
+]

@@ -1,0 +1,16 @@
+models:
+  claude:
+    type: claude_code_cli
+  deepseek:
+    type: api
+    base_url: "https://api.deepseek.com/v1"
+    key_env: DEEPSEEK_API_KEY
+    model: "deepseek-chat"
+  qwen3:
+    type: local
+    base_url: "localhost:11434"
+    model: "qwen3:35b"
+  gemma4:
+    type: local
+    base_url: "localhost:11434"
+    model: "gemma4:35b"

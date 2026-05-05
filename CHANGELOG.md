@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.2.1.0] - 2026-05-05
+
+### Added
+- ChatPanel: refine workflows by chatting — describe changes, LLM regenerates YAML
+- HistoryPanel: run timeline with status dots, re-run from any past run
+- TemplatePanel: save and reuse nodes via localStorage, search and delete
+- Undo/redo: Cmd+Z / Cmd+Shift+Z with 50-entry history stack, auto-synced to YAML
+- Keyboard shortcuts: Delete=remove node, Space=run selected, N=add node
+- Auto-save: debounced 2s save to YAML on any change
+
+### Fixed
+- Undo/redo now syncs changes back to the YAML file (triggers auto-save)
+- ChatPanel uses dedicated /api/refine-chain endpoint with structured input
+
 ## [0.2.0.0] - 2026-05-05
 
 ### Added

@@ -1,0 +1,31 @@
+version: "1"
+name: "Analyze GitHub repo for Raspberry Pi project"
+model: claude
+
+nodes:
+  - id: fetch
+    name: "Fetch repo info"
+    skill: null
+    command: null
+    instruction: |
+      Browse the GitHub repo https://github.com/raspberrypi/linux and summarize its purpose,
+      tech stack, and README highlights. Be concise.
+    inputs: []
+
+  - id: analyze
+    name: "Assess Pi compatibility"
+    skill: null
+    command: null
+    instruction: |
+      Given the repo summary, assess if this could run on Raspberry Pi 4B.
+      Consider ARM compatibility, RAM requirements, CPU load. Be specific.
+    inputs: [fetch]
+
+  - id: report
+    name: "Final decision"
+    skill: null
+    command: null
+    instruction: |
+      Write a one-paragraph decision: yes/no this repo is useful
+      for my Raspberry Pi project, with 3 bullet reasons.
+    inputs: [analyze, fetch]

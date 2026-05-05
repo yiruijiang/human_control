@@ -33,10 +33,24 @@ export function loadMeta(runDir: string): RunMeta | null {
 
 export function generateRunDir(baseDir: string): string {
   const ts = new Date().toISOString().replace(/:/g, "-").replace(/\..+/, "");
-  let dir = path.join(baseDir, ts);
-  if (!fs.existsSync(dir)) return dir;
+  const dir = path.join(baseDir, ts);
+
+  try {
+    fs.mkdirSync(dir);
+    return dir;
+  } catch (err: any) {
+    if (err.code !== "EEXIST") throw err;
+  }
 
   let i = 1;
-  while (fs.existsSync(`${dir}-${i}`)) i++;
-  return `${dir}-${i}`;
+  while (true) {
+    const suffixDir = `${dir}-${i}`;
+    try {
+      fs.mkdirSync(suffixDir);
+      return suffixDir;
+    } catch (err: any) {
+      if (err.code !== "EEXIST") throw err;
+    }
+    i++;
+  }
 }

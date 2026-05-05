@@ -2,7 +2,7 @@ import { describe, it, expect } from "bun:test";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
-import { writeArtifact, loadArtifact, writeMeta, loadMeta, generateRunDir } from "../artifacts.ts";
+import { writeArtifact, loadArtifact, loadArtifactRaw, writeMeta, loadMeta, generateRunDir } from "../artifacts.ts";
 import type { Artifact } from "../types.ts";
 
 function tmpDir(): string {
@@ -76,14 +76,49 @@ describe("artifacts", () => {
     expect(meta?.chain_file).toBe("chains/test.yaml");
   });
 
-  it("run_id collision: second call in same dir gets unique name", () => {
+  it("run_id collision: second call in same second gets unique name", () => {
     const base = tmpDir();
-    const first = generateRunDir(base);
-    fs.mkdirSync(first);
+    const first = generateRunDir(base);  // creates directory
+    expect(fs.existsSync(first)).toBe(true);
 
-    // Simulate same-second call by manually creating the timestamp dir
+    // Same-second call: first dir already exists, so gets -1 suffix
     const second = generateRunDir(base);
     expect(second).not.toBe(first);
     expect(second.endsWith("-1")).toBe(true);
+  });
+
+  it("generateRunDir normal case: no collision", () => {
+    const base = tmpDir();
+    const dir = generateRunDir(base);
+    expect(fs.existsSync(dir)).toBe(true);
+    expect(dir.startsWith(base)).toBe(true);
+  });
+
+  it("loadMeta returns null when file does not exist", () => {
+    const dir = tmpDir();
+    expect(loadMeta(dir)).toBeNull();
+  });
+
+  it("loadArtifactRaw returns artifact regardless of status", () => {
+    const dir = tmpDir();
+    const artifact: Artifact = {
+      node_id: "x",
+      node_name: "X",
+      run_id: "run1",
+      model: "claude",
+      status: "failed",
+      output: "",
+      error: "boom",
+      duration_ms: 1,
+    };
+    writeArtifact(dir, "x", artifact);
+    const loaded = loadArtifactRaw(dir, "x");
+    expect(loaded).not.toBeNull();
+    expect(loaded!.status).toBe("failed");
+  });
+
+  it("loadArtifactRaw returns null when file does not exist", () => {
+    const dir = tmpDir();
+    expect(loadArtifactRaw(dir, "missing")).toBeNull();
   });
 });

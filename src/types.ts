@@ -21,6 +21,7 @@ export interface ModelConfig {
   base_url?: string;
   key_env?: string;
   model?: string;
+  timeout_ms?: number;
 }
 
 export interface Config {

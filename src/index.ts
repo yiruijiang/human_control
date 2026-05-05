@@ -1,7 +1,7 @@
 import * as fs from "fs";
 import * as path from "path";
 import { execSync } from "child_process";
-import { parseChain, parseConfig, validateChain } from "./validate.ts";
+import { parseChain, parseConfig, validateChain, runPreflightChecks } from "./validate.ts";
 import { topologicalSort } from "./topo.ts";
 import { generateRunDir, writeMeta, loadMeta } from "./artifacts.ts";
 import { execute } from "./executor.ts";
@@ -50,6 +50,9 @@ async function cmdRun(args: string[]): Promise<void> {
   const config = parseConfig(findConfig());
   validateChain(chain, config);
 
+  const assetsPath = path.join(process.cwd(), "assets");
+  await runPreflightChecks(chain, config, assetsPath);
+
   const order = topologicalSort(chain);
 
   if (dryRun) {
@@ -71,15 +74,12 @@ async function cmdRun(args: string[]): Promise<void> {
       process.exit(1);
     }
   } else {
-    runDir = generateRunDir(RUNS_DIR);
-    fs.mkdirSync(runDir, { recursive: true });
+    runDir = generateRunDir(RUNS_DIR);  // atomically creates directory
     writeMeta(runDir, {
       chain_file: path.relative(gitRoot, path.resolve(chainFile)),
       started_at: new Date().toISOString(),
     });
   }
-
-  const assetsPath = path.join(process.cwd(), "assets");
 
   try {
     await execute({

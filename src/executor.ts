@@ -6,7 +6,6 @@ import type { Chain, ChainNode, Config, Artifact } from "./types.ts";
 import { writeArtifact, loadArtifact, loadArtifactRaw } from "./artifacts.ts";
 import { loadSkillContent, stripInteractiveSections } from "./skills.ts";
 
-const GSTACK_PATH = path.join(os.homedir(), ".claude", "skills", "gstack");
 const BROWSE_BIN_PATH = path.join(os.homedir(), ".claude", "skills", "gstack", "browse", "dist");
 
 interface ExecutorOptions {
@@ -105,7 +104,8 @@ export async function execute(opts: ExecutorOptions): Promise<void> {
           env,
           cwd: process.cwd(),
           encoding: "utf8",
-          maxBuffer: 10 * 1024 * 1024,
+          maxBuffer: 50 * 1024 * 1024,  // 50MB; if exceeded spawnSync throws descriptive error
+          timeout: 300_000,  // 5 min default for command nodes
         });
         fs.unlinkSync(cmdFile);
 
@@ -125,6 +125,7 @@ export async function execute(opts: ExecutorOptions): Promise<void> {
           const envPath = process.env.PATH
             ? `${BROWSE_BIN_PATH}:${process.env.PATH}`
             : BROWSE_BIN_PATH;
+          const timeout = modelConfig.timeout_ms ?? 300_000;
 
           const result = spawnSync(
             "claude",
@@ -133,7 +134,8 @@ export async function execute(opts: ExecutorOptions): Promise<void> {
               input: promptContent,
               env: { ...process.env, PATH: envPath },
               encoding: "utf8",
-              maxBuffer: 10 * 1024 * 1024,
+              maxBuffer: 50 * 1024 * 1024,  // 50MB; if exceeded spawnSync throws descriptive error
+              timeout,
             }
           );
           rawOutput = result.stdout ?? "";
@@ -169,26 +171,31 @@ export async function execute(opts: ExecutorOptions): Promise<void> {
           }
         } else if (modelConfig.type === "api") {
           const apiKey = process.env[modelConfig.key_env!];
-          const response = await fetch(`${modelConfig.base_url}/chat/completions`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${apiKey}`,
-            },
-            body: JSON.stringify({
-              model: modelConfig.model,
-              messages: [{ role: "user", content: promptContent }],
-            }),
-          });
-          if (!response.ok) {
+          if (!apiKey) {
             failed = true;
-            failReason = `API HTTP ${response.status}: ${await response.text()}`;
+            failReason = `API key env var "${modelConfig.key_env}" not set`;
           } else {
-            const data = await response.json() as any;
-            rawOutput = data?.choices?.[0]?.message?.content ?? "";
-            if (!rawOutput) {
+            const response = await fetch(`${modelConfig.base_url}/chat/completions`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${apiKey}`,
+              },
+              body: JSON.stringify({
+                model: modelConfig.model,
+                messages: [{ role: "user", content: promptContent }],
+              }),
+            });
+            if (!response.ok) {
               failed = true;
-              failReason = "empty response from API model";
+              failReason = `API HTTP ${response.status}: ${await response.text()}`;
+            } else {
+              const data = await response.json() as any;
+              rawOutput = data?.choices?.[0]?.message?.content ?? "";
+              if (!rawOutput) {
+                failed = true;
+                failReason = "empty response from API model";
+              }
             }
           }
         }

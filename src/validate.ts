@@ -8,7 +8,7 @@ const NodeSchema = z.object({
   name: z.string().min(1),
   skill: z.string().nullable().default(null),
   command: z.string().nullable().default(null),
-  instruction: z.string().min(1),
+  instruction: z.string().default(""),
   inputs: z.array(z.string()).default([]),
   model: z.string().optional(),
   cache: z.boolean().optional().default(false),
@@ -25,7 +25,7 @@ const ChainSchema = z.object({
 });
 
 const ModelConfigSchema = z.discriminatedUnion("type", [
-  z.object({ type: z.literal("claude_code_cli") }),
+  z.object({ type: z.literal("claude_code_cli"), timeout_ms: z.number().optional() }),
   z.object({
     type: z.literal("local"),
     base_url: z.string(),
@@ -53,6 +53,38 @@ export function parseConfig(filePath: string): Config {
   return ConfigSchema.parse(raw) as Config;
 }
 
+export async function runPreflightChecks(chain: Chain, config: Config, assetsPath: string): Promise<void> {
+  // 1. claude binary in PATH
+  const claudePath = Bun.which("claude");
+  if (!claudePath) {
+    console.warn("[preflight] claude not found in PATH — claude_code_cli nodes will fail");
+  }
+
+  // 2. skill file existence
+  const gstackPath = `${assetsPath}/repos/gstack`;
+  for (const node of chain.nodes) {
+    if (node.skill) {
+      const skillFile = `${gstackPath}/${node.skill}/SKILL.md`;
+      if (!fs.existsSync(skillFile)) {
+        throw new Error(`skill "${node.skill}" not found at ${skillFile}`);
+      }
+    }
+  }
+
+  // 3. Ollama health check for local models (warn only)
+  const hasLocalModel = chain.nodes.some(
+    (n) => config.models[n.model ?? chain.model]?.type === "local"
+  );
+  if (hasLocalModel) {
+    try {
+      const resp = await fetch("http://localhost:11434/api/tags");
+      if (!resp.ok) console.warn("[preflight] Ollama not reachable — local model nodes will fail");
+    } catch {
+      console.warn("[preflight] Ollama not running — local model nodes will fail");
+    }
+  }
+}
+
 export function validateChain(chain: Chain, config: Config): void {
   const modelKeys = new Set(Object.keys(config.models));
 
@@ -61,6 +93,17 @@ export function validateChain(chain: Chain, config: Config): void {
   }
 
   const nodeIds = new Set(chain.nodes.map((n) => n.id));
+
+  // Check for duplicate node IDs
+  if (nodeIds.size !== chain.nodes.length) {
+    const seen = new Set<string>();
+    for (const n of chain.nodes) {
+      if (seen.has(n.id)) {
+        throw new Error(`duplicate node id "${n.id}"`);
+      }
+      seen.add(n.id);
+    }
+  }
 
   for (const node of chain.nodes) {
     const effectiveModel = node.model ?? chain.model;
@@ -71,6 +114,9 @@ export function validateChain(chain: Chain, config: Config): void {
     for (const dep of node.inputs) {
       if (!nodeIds.has(dep)) {
         throw new Error(`node "${node.id}" inputs references unknown node "${dep}"`);
+      }
+      if (dep === node.id) {
+        throw new Error(`node "${node.id}" cannot depend on itself`);
       }
     }
   }

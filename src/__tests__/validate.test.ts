@@ -120,4 +120,48 @@ nodes:
     const config = parseConfig(configFile);
     expect(() => validateChain(chain, config)).toThrow(/nonexistent/);
   });
+
+  it("node.inputs contains own id → validation error", () => {
+    const chainFile = tmpYaml(`
+version: "1"
+name: Test
+model: claude
+nodes:
+  - id: a
+    name: A
+    skill: null
+    command: null
+    instruction: do it
+    inputs: [a]
+`);
+    const configFile = tmpYaml(validConfigYaml);
+    const chain = parseChain(chainFile);
+    const config = parseConfig(configFile);
+    expect(() => validateChain(chain, config)).toThrow(/itself/);
+  });
+
+  it("duplicate node IDs → validation error", () => {
+    const chainFile = tmpYaml(`
+version: "1"
+name: Test
+model: claude
+nodes:
+  - id: a
+    name: A
+    skill: null
+    command: null
+    instruction: do it
+    inputs: []
+  - id: a
+    name: A2
+    skill: null
+    command: null
+    instruction: do it again
+    inputs: []
+`);
+    const configFile = tmpYaml(validConfigYaml);
+    const chain = parseChain(chainFile);
+    const config = parseConfig(configFile);
+    expect(() => validateChain(chain, config)).toThrow(/duplicate/);
+  });
 });

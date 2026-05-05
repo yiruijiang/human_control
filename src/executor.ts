@@ -18,6 +18,7 @@ interface ExecutorOptions {
   chain: Chain;
   config: Config;
   assetsPath: string;
+  fromNodeId?: string;
 }
 
 export async function execute(opts: ExecutorOptions): Promise<void> {
@@ -32,7 +33,13 @@ export async function execute(opts: ExecutorOptions): Promise<void> {
     return;
   }
 
+  // fromNodeId: skip nodes before the specified node in topo order
+  let started = !opts.fromNodeId;
   for (const node of order) {
+    if (!started) {
+      if (node.id === opts.fromNodeId) started = true;
+      else continue;
+    }
     // STEP 1 — cache check
     if (node.cache) {
       const cached = loadArtifact(runDir, node.id);

@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.2.0.0] - 2026-05-05
+
+### Added
+- Visual canvas: ReactFlow node graph for designing and executing AI workflows
+- NL init: describe a workflow in natural language, get a complete YAML chain
+- Live execution: SSE streaming output per node, color-coded states (amber/green/red)
+- Skill palette: searchable sidebar with all gstack skills, one-click add to canvas
+- Custom node rendering: pending/running/completed/failed states with real-time updates
+- Re-run from here: execute from any node, downstream only
+- Terminal/IDE dark theme with CSS design tokens (GitHub-dark color scheme)
+- API routes: chains CRUD, skills list, run-chain SSE, generate-chain, runs, artifacts
+- Edge translation: bidirectional YAML inputs ↔ ReactFlow edges
+
+### Changed
+- Executor: added `--from` flag for per-node execution
+
 ## [0.1.0.0] - 2026-05-05
 
 ### Added

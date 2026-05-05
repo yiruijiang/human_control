@@ -1,6 +1,6 @@
 {
   "name": "human-control",
-  "version": "0.1.0.0",
+  "version": "0.2.0.0",
   "type": "module",
   "bin": {
     "human-control": "./dist/human-control"
@@ -14,7 +14,8 @@
     "@types/bun": "latest"
   },
   "dependencies": {
-    "js-yaml": "^4.1.0",
-    "zod": "^3.23.8"
+    "@xyflow/react": "^12.10.2",
+    "js-yaml": "^4.1.1",
+    "zod": "^4.4.3"
   }
 }

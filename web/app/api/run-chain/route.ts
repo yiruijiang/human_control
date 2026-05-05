@@ -83,13 +83,18 @@ export async function POST(req: Request) {
               if (node.command) {
                 const tmpd = fs.mkdtempSync(path.join(os.tmpdir(), "hc-cmd-"));
                 const cmdFile = path.join(tmpd, "cmd.sh");
-                fs.writeFileSync(cmdFile, node.command, { mode: 0o755 });
-                const result = spawnSync("sh", [cmdFile], {
-                  env: { ...process.env, HC_RUN_DIR: runDir, HC_NODE_ID: node.id, HC_CHAIN_NAME: parsed.name },
-                  encoding: "utf8", maxBuffer: 50 * 1024 * 1024, timeout: 300_000,
-                });
-                output = result.stdout ?? "";
-                if (result.status !== 0) { status = "failed"; error = result.stderr || `exit ${result.status}`; }
+                try {
+                  fs.writeFileSync(cmdFile, node.command, { mode: 0o755 });
+                  const result = spawnSync("sh", [cmdFile], {
+                    env: { ...process.env, HC_RUN_DIR: runDir, HC_NODE_ID: node.id, HC_CHAIN_NAME: parsed.name },
+                    encoding: "utf8", maxBuffer: 50 * 1024 * 1024, timeout: 300_000,
+                  });
+                  output = result.stdout ?? "";
+                  if (result.status !== 0) { status = "failed"; error = result.stderr || `exit ${result.status}`; }
+                } finally {
+                  // Clean up temp dir
+                  try { fs.rmSync(tmpd, { recursive: true }); } catch {}
+                }
               } else {
                 const envPath = process.env.PATH ? `${BROWSE_BIN}:${process.env.PATH}` : BROWSE_BIN;
                 const result = spawnSync("claude", [

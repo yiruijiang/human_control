@@ -19,6 +19,30 @@ interface ChainData {
   }>;
 }
 
+function parseSSEBlock(block: string): { event: string; data: any } | null {
+  const eventMatch = block.match(/^event: (.+)$/m);
+  const dataMatch = block.match(/^data: (.+)$/m);
+  if (!eventMatch || !dataMatch) return null;
+  try { return { event: eventMatch[1], data: JSON.parse(dataMatch[1]) }; }
+  catch { return null; }
+}
+
+async function readSSEStream(reader: ReadableStreamDefaultReader<Uint8Array>, onEvent: (event: string, data: any) => void) {
+  const decoder = new TextDecoder();
+  let buffer = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const blocks = buffer.split("\n\n");
+    buffer = blocks.pop() ?? "";
+    for (const block of blocks) {
+      const parsed = parseSSEBlock(block);
+      if (parsed) onEvent(parsed.event, parsed.data);
+    }
+  }
+}
+
 export default function Home() {
   const [chain, setChain] = useState<ChainData | null>(null);
   const [chainFile, setChainFile] = useState<string>("");
@@ -55,46 +79,20 @@ export default function Home() {
 
       const reader = res.body?.getReader();
       if (!reader) throw new Error("No response stream");
-      const decoder = new TextDecoder();
-      let buffer = "";
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n\n");
-        buffer = lines.pop() ?? "";
-
-        for (const block of lines) {
-          const eventMatch = block.match(/^event: (.+)$/m);
-          const dataMatch = block.match(/^data: (.+)$/m);
-          if (!eventMatch || !dataMatch) continue;
-
-          const event = eventMatch[1];
-          let data: any;
-          try { data = JSON.parse(dataMatch[1]); } catch { continue; }
-
-          switch (event) {
-            case "node-output":
-              setOutputs((prev) => ({
-                ...prev,
-                [data.nodeId]: (prev[data.nodeId] ?? "") + data.line,
-              }));
-              break;
-            case "node-status":
-              setNodeStatuses((prev) => ({ ...prev, [data.nodeId]: data.status }));
-              if (data.error) setErrors((prev) => ({ ...prev, [data.nodeId]: data.error }));
-              break;
-            case "chain-done":
-              setIsRunning(false);
-              break;
-            case "error":
-              setNlError(data.error);
-              setIsRunning(false);
-              break;
-          }
+      await readSSEStream(reader, (event, data) => {
+        switch (event) {
+          case "node-output":
+            setOutputs((prev) => ({ ...prev, [data.nodeId]: (prev[data.nodeId] ?? "") + data.line }));
+            break;
+          case "node-status":
+            setNodeStatuses((prev) => ({ ...prev, [data.nodeId]: data.status }));
+            if (data.error) setErrors((prev) => ({ ...prev, [data.nodeId]: data.error }));
+            break;
+          case "chain-done": setIsRunning(false); break;
+          case "error": setNlError(data.error); setIsRunning(false); break;
         }
-      }
+      });
     } catch (e: any) {
       setNlError(e.message);
     } finally {
@@ -196,32 +194,16 @@ export default function Home() {
         });
         const reader = res.body?.getReader();
         if (!reader) return;
-        // Reuse same SSE parsing as handleRunAll
-        const decoder = new TextDecoder();
-        let buffer = "";
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split("\n\n");
-          buffer = lines.pop() ?? "";
-          for (const block of lines) {
-            const eventMatch = block.match(/^event: (.+)$/m);
-            const dataMatch = block.match(/^data: (.+)$/m);
-            if (!eventMatch || !dataMatch) continue;
-            const event = eventMatch[1];
-            let data: any;
-            try { data = JSON.parse(dataMatch[1]); } catch { continue; }
-            if (event === "node-output") {
-              setOutputs((prev) => ({ ...prev, [data.nodeId]: (prev[data.nodeId] ?? "") + data.line }));
-            } else if (event === "node-status") {
-              setNodeStatuses((prev) => ({ ...prev, [data.nodeId]: data.status }));
-              if (data.error) setErrors((prev) => ({ ...prev, [data.nodeId]: data.error }));
-            } else if (event === "chain-done") {
-              setIsRunning(false);
-            }
+        await readSSEStream(reader, (event, data) => {
+          if (event === "node-output") {
+            setOutputs((prev) => ({ ...prev, [data.nodeId]: (prev[data.nodeId] ?? "") + data.line }));
+          } else if (event === "node-status") {
+            setNodeStatuses((prev) => ({ ...prev, [data.nodeId]: data.status }));
+            if (data.error) setErrors((prev) => ({ ...prev, [data.nodeId]: data.error }));
+          } else if (event === "chain-done") {
+            setIsRunning(false);
           }
-        }
+        });
       } catch (e: any) {
         setNlError(e.message);
       } finally {

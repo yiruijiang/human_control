@@ -18,14 +18,9 @@ function getGitRoot(): string {
 }
 
 function findConfig(): string {
-  const locations = [
-    path.join(HC_DIR, "config.yaml"),
-    path.join(process.cwd(), ".human-control", "config.yaml"),
-  ];
-  for (const loc of locations) {
-    if (fs.existsSync(loc)) return loc;
-  }
-  throw new Error("config.yaml not found — create .human-control/config.yaml");
+  const loc = path.join(HC_DIR, "config.yaml");
+  if (fs.existsSync(loc)) return loc;
+  throw new Error(`${HC_DIR}/config.yaml not found — create one in your project root`);
 }
 
 async function cmdRun(args: string[]): Promise<void> {
@@ -124,22 +119,18 @@ function cmdListRuns(args: string[]): void {
       .filter((f) => f.endsWith(".json") && f !== "meta.json");
 
     const total = artifacts.length;
-    const completed = artifacts.filter((f) => {
+    let completed = 0;
+    let anyFailed = false;
+    for (const f of artifacts) {
       try {
-        return JSON.parse(fs.readFileSync(path.join(runDir, f), "utf8")).status === "completed";
+        const status = JSON.parse(fs.readFileSync(path.join(runDir, f), "utf8")).status;
+        if (status === "completed") completed++;
+        else if (status === "failed") anyFailed = true;
       } catch {
-        return false;
+        // corrupted artifact — skip
       }
-    }).length;
-
+    }
     const allDone = total > 0 && completed === total;
-    const anyFailed = artifacts.some((f) => {
-      try {
-        return JSON.parse(fs.readFileSync(path.join(runDir, f), "utf8")).status === "failed";
-      } catch {
-        return false;
-      }
-    });
 
     rows.push({
       run_id: runId,

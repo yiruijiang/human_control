@@ -72,12 +72,13 @@ export async function runPreflightChecks(chain: Chain, config: Config, assetsPat
   }
 
   // 3. Ollama health check for local models (warn only)
+  const OLLAMA_TAGS_URL = "http://localhost:11434/api/tags";
   const hasLocalModel = chain.nodes.some(
     (n) => config.models[n.model ?? chain.model]?.type === "local"
   );
   if (hasLocalModel) {
     try {
-      const resp = await fetch("http://localhost:11434/api/tags");
+      const resp = await fetch(OLLAMA_TAGS_URL);
       if (!resp.ok) console.warn("[preflight] Ollama not reachable — local model nodes will fail");
     } catch {
       console.warn("[preflight] Ollama not running — local model nodes will fail");

@@ -3,10 +3,12 @@ import * as path from "path";
 import * as os from "os";
 import { spawnSync } from "child_process";
 import type { Chain, ChainNode, Config, Artifact } from "./types.ts";
-import { writeArtifact, loadArtifact, loadArtifactRaw } from "./artifacts.ts";
+import { writeArtifact, loadArtifact } from "./artifacts.ts";
 import { loadSkillContent, stripInteractiveSections } from "./skills.ts";
 
 const BROWSE_BIN_PATH = path.join(os.homedir(), ".claude", "skills", "gstack", "browse", "dist");
+const MAX_SPAWN_BUFFER = 50 * 1024 * 1024;  // 50MB
+const DEFAULT_NODE_TIMEOUT_MS = 300_000;    // 5 min
 
 interface ExecutorOptions {
   resume?: boolean;
@@ -104,8 +106,8 @@ export async function execute(opts: ExecutorOptions): Promise<void> {
           env,
           cwd: process.cwd(),
           encoding: "utf8",
-          maxBuffer: 50 * 1024 * 1024,  // 50MB; if exceeded spawnSync throws descriptive error
-          timeout: 300_000,  // 5 min default for command nodes
+          maxBuffer: MAX_SPAWN_BUFFER,
+          timeout: DEFAULT_NODE_TIMEOUT_MS,
         });
         fs.unlinkSync(cmdFile);
 
@@ -125,7 +127,7 @@ export async function execute(opts: ExecutorOptions): Promise<void> {
           const envPath = process.env.PATH
             ? `${BROWSE_BIN_PATH}:${process.env.PATH}`
             : BROWSE_BIN_PATH;
-          const timeout = modelConfig.timeout_ms ?? 300_000;
+          const timeout = modelConfig.timeout_ms ?? DEFAULT_NODE_TIMEOUT_MS;
 
           const result = spawnSync(
             "claude",
@@ -134,7 +136,7 @@ export async function execute(opts: ExecutorOptions): Promise<void> {
               input: promptContent,
               env: { ...process.env, PATH: envPath },
               encoding: "utf8",
-              maxBuffer: 50 * 1024 * 1024,  // 50MB; if exceeded spawnSync throws descriptive error
+              maxBuffer: MAX_SPAWN_BUFFER,
               timeout,
             }
           );

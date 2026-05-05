@@ -1,5 +1,8 @@
 import { describe, it, expect } from "bun:test";
-import { stripInteractiveSections } from "../skills.ts";
+import * as fs from "fs";
+import * as os from "os";
+import * as path from "path";
+import { stripInteractiveSections, loadSkillContent } from "../skills.ts";
 
 const sampleWithAsk = `
 ## Introduction
@@ -91,5 +94,24 @@ describe("stripInteractiveSections", () => {
     const result = stripInteractiveSections(sampleAskAtEnd);
     expect(result).toContain("Intro");
     expect(result).not.toContain("This is the last section");
+  });
+});
+
+describe("loadSkillContent", () => {
+  it("reads SKILL.md content from gstack path", () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "hc-skills-test-"));
+    const skillDir = path.join(dir, "browse");
+    fs.mkdirSync(skillDir, { recursive: true });
+    fs.writeFileSync(path.join(skillDir, "SKILL.md"), "# Browse Skill\nContent here");
+    const result = loadSkillContent(dir, "browse");
+    expect(result).toContain("Browse Skill");
+  });
+
+  it("throws when SKILL.md does not exist", () => {
+    expect(() => loadSkillContent("/nonexistent-dir", "missing")).toThrow();
+  });
+
+  it("throws on path traversal in skill name", () => {
+    expect(() => loadSkillContent("/tmp", "../../../etc/passwd")).toThrow(/invalid skill name/);
   });
 });

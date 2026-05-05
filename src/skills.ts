@@ -1,6 +1,9 @@
 import * as fs from "fs";
 
 export function loadSkillContent(gstackPath: string, skillName: string): string {
+  if (skillName.includes("..") || skillName.includes("/") || skillName.includes("\\")) {
+    throw new Error(`invalid skill name: "${skillName}"`);
+  }
   const skillFile = `${gstackPath}/${skillName}/SKILL.md`;
   return fs.readFileSync(skillFile, "utf8");
 }

@@ -7,18 +7,19 @@ export function writeArtifact(runDir: string, nodeId: string, artifact: Artifact
   fs.writeFileSync(filePath, JSON.stringify(artifact, null, 2));
 }
 
-export function loadArtifact(runDir: string, nodeId: string): Artifact | null {
-  const filePath = path.join(runDir, `${nodeId}.json`);
-  if (!fs.existsSync(filePath)) return null;
-  const data = JSON.parse(fs.readFileSync(filePath, "utf8")) as Artifact;
-  if (data.status !== "completed") return null;
-  return data;
-}
-
-export function loadArtifactRaw(runDir: string, nodeId: string): Artifact | null {
+function readArtifactFile(runDir: string, nodeId: string): Artifact | null {
   const filePath = path.join(runDir, `${nodeId}.json`);
   if (!fs.existsSync(filePath)) return null;
   return JSON.parse(fs.readFileSync(filePath, "utf8")) as Artifact;
+}
+
+export function loadArtifact(runDir: string, nodeId: string): Artifact | null {
+  const data = readArtifactFile(runDir, nodeId);
+  return data?.status === "completed" ? data : null;
+}
+
+export function loadArtifactRaw(runDir: string, nodeId: string): Artifact | null {
+  return readArtifactFile(runDir, nodeId);
 }
 
 export function writeMeta(runDir: string, meta: RunMeta): void {

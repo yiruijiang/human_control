@@ -52,6 +52,7 @@ export default function Canvas({
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [historyIdx, setHistoryIdx] = useState(-1);
   const capturing = useRef(false);
+  const skipRef = useRef(true); // skip first sync push
 
   const pushHistory = useCallback(() => {
     if (capturing.current) return;
@@ -59,7 +60,7 @@ export default function Canvas({
       const entry = { nodes, edges };
       const next = prev.slice(0, historyIdx + 1);
       next.push(entry);
-      return next.slice(-50); // keep last 50 entries
+      return next.slice(-50);
     });
     setHistoryIdx((i) => Math.min(i + 1, 49));
   }, [nodes, edges, historyIdx]);
@@ -71,8 +72,18 @@ export default function Canvas({
     setNodes(entry.nodes);
     setEdges(entry.edges);
     setHistoryIdx((i) => i - 1);
-    setTimeout(() => { capturing.current = false; }, 100);
-  }, [history, historyIdx, setNodes, setEdges]);
+    // Sync to chain after undo
+    setTimeout(() => {
+      capturing.current = false;
+      if (chain) {
+        const updatedNodes = chain.nodes.map((n) => ({
+          ...n,
+          inputs: entry.edges.filter((e: Edge) => e.target === n.id).map((e: Edge) => e.source),
+        }));
+        onChainChange({ ...chain, nodes: updatedNodes });
+      }
+    }, 100);
+  }, [history, historyIdx, setNodes, setEdges, chain, onChainChange]);
 
   const redo = useCallback(() => {
     if (historyIdx >= history.length - 1) return;
@@ -81,19 +92,32 @@ export default function Canvas({
     setNodes(entry.nodes);
     setEdges(entry.edges);
     setHistoryIdx((i) => i + 1);
-    setTimeout(() => { capturing.current = false; }, 100);
-  }, [history, historyIdx, setNodes, setEdges]);
+    setTimeout(() => {
+      capturing.current = false;
+      if (chain) {
+        const updatedNodes = chain.nodes.map((n) => ({
+          ...n,
+          inputs: entry.edges.filter((e: Edge) => e.target === n.id).map((e: Edge) => e.source),
+        }));
+        onChainChange({ ...chain, nodes: updatedNodes });
+      }
+    }, 100);
+  }, [history, historyIdx, setNodes, setEdges, chain, onChainChange]);
 
   // Sync nodes/edges when chain data changes
   useEffect(() => {
+    skipRef.current = true;
     setNodes(initialNodes);
     setEdges(initialEdges);
     setHistory([]);
     setHistoryIdx(-1);
   }, [chain, nodeStatuses]);
 
-  // Push history on any manual change
-  useEffect(() => { pushHistory(); }, [nodes.length]);
+  // Push history on any manual change (skip initial sync)
+  useEffect(() => {
+    if (skipRef.current) { skipRef.current = false; return; }
+    pushHistory();
+  }, [nodes.length]);
 
   // Keyboard shortcuts
   useEffect(() => {

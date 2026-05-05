@@ -32,10 +32,10 @@ export default function ChatPanel({ onClose, onApplyYaml, currentYaml }: ChatPan
     setLoading(true);
 
     try {
-      const res = await fetch("/api/generate-chain", {
+      const res = await fetch("/api/refine-chain", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ description: `Current chain:\n${currentYaml()}\n\nRefinement request: ${text}` }),
+        body: JSON.stringify({ currentYaml: currentYaml(), instruction: text }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Generation failed");

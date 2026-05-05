@@ -1,25 +1,16 @@
 "use client";
 
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import {
-  ReactFlow,
-  Background,
-  Controls,
-  MiniMap,
-  addEdge,
-  useNodesState,
-  useEdgesState,
-  type Connection,
-  type Node,
-  type Edge,
+  ReactFlow, Background, Controls, MiniMap, addEdge,
+  useNodesState, useEdgesState,
+  type Connection, type Node, type Edge,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import ChainNodeComponent from "./nodes/ChainNode";
 
 export interface ChainData {
-  version: string;
-  name: string;
-  model: string;
+  version: string; name: string; model: string;
   nodes: Array<{
     id: string; name: string; skill: string | null; command: string | null;
     instruction: string; inputs: string[]; model?: string; cache?: boolean;
@@ -35,61 +26,109 @@ interface CanvasProps {
   nodeStatuses: Record<string, "pending" | "running" | "completed" | "failed">;
   onNodeSelect: (nodeId: string) => void;
   onNodeReRun: (nodeId: string) => void;
+  onDeleteNode: (nodeId: string) => void;
+  onAddNode: () => void;
   selectedNodeId: string | null;
 }
 
+interface HistoryEntry { nodes: Node[]; edges: Edge[]; }
+
 export default function Canvas({
   chain, initialEdges, onChainChange, nodeStatuses,
-  onNodeSelect, onNodeReRun, selectedNodeId,
+  onNodeSelect, onNodeReRun, onDeleteNode, onAddNode, selectedNodeId,
 }: CanvasProps) {
   const initialNodes: Node[] = (chain?.nodes ?? []).map((n, i) => ({
-    id: n.id,
-    type: "chainNode",
+    id: n.id, type: "chainNode",
     position: { x: 250, y: i * 120 + 50 },
-    data: {
-      name: n.name,
-      instruction: n.instruction,
-      skill: n.skill,
-      command: n.command,
-      status: nodeStatuses[n.id] ?? "pending",
-      onSelect: onNodeSelect,
-      onReRun: onNodeReRun,
-    },
+    data: { name: n.name, instruction: n.instruction, skill: n.skill,
+      command: n.command, status: nodeStatuses[n.id] ?? "pending",
+      onSelect: onNodeSelect, onReRun: onNodeReRun },
   }));
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
-  // Sync nodes/edges when chain data changes (NL init, open file, etc.)
+  // Undo/redo stacks
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [historyIdx, setHistoryIdx] = useState(-1);
+  const capturing = useRef(false);
+
+  const pushHistory = useCallback(() => {
+    if (capturing.current) return;
+    setHistory((prev) => {
+      const entry = { nodes, edges };
+      const next = prev.slice(0, historyIdx + 1);
+      next.push(entry);
+      return next.slice(-50); // keep last 50 entries
+    });
+    setHistoryIdx((i) => Math.min(i + 1, 49));
+  }, [nodes, edges, historyIdx]);
+
+  const undo = useCallback(() => {
+    if (historyIdx < 0) return;
+    capturing.current = true;
+    const entry = history[historyIdx];
+    setNodes(entry.nodes);
+    setEdges(entry.edges);
+    setHistoryIdx((i) => i - 1);
+    setTimeout(() => { capturing.current = false; }, 100);
+  }, [history, historyIdx, setNodes, setEdges]);
+
+  const redo = useCallback(() => {
+    if (historyIdx >= history.length - 1) return;
+    capturing.current = true;
+    const entry = history[historyIdx + 1];
+    setNodes(entry.nodes);
+    setEdges(entry.edges);
+    setHistoryIdx((i) => i + 1);
+    setTimeout(() => { capturing.current = false; }, 100);
+  }, [history, historyIdx, setNodes, setEdges]);
+
+  // Sync nodes/edges when chain data changes
   useEffect(() => {
     setNodes(initialNodes);
     setEdges(initialEdges);
+    setHistory([]);
+    setHistoryIdx(-1);
   }, [chain, nodeStatuses]);
+
+  // Push history on any manual change
+  useEffect(() => { pushHistory(); }, [nodes.length]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if ((e.metaKey || e.ctrlKey) && e.key === "z" && !e.shiftKey) { e.preventDefault(); undo(); }
+      else if ((e.metaKey || e.ctrlKey) && e.key === "z" && e.shiftKey) { e.preventDefault(); redo(); }
+      else if ((e.metaKey || e.ctrlKey) && e.key === "y") { e.preventDefault(); redo(); }
+      else if (e.key === "Delete" || e.key === "Backspace") {
+        if (selectedNodeId) { e.preventDefault(); onDeleteNode(selectedNodeId); }
+      }
+      else if (e.key === " " && selectedNodeId) { e.preventDefault(); onNodeReRun(selectedNodeId); }
+      else if (e.key === "n") { e.preventDefault(); onAddNode(); }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [undo, redo, selectedNodeId, onDeleteNode, onNodeReRun, onAddNode]);
 
   const onConnect = useCallback(
     (connection: Connection) => {
       setEdges((eds) => addEdge({ ...connection, type: "smoothstep" }, eds));
-      // Sync back to chain data
       if (!chain) return;
       const updatedNodes = chain.nodes.map((n) => {
-        const newInputs = edges
-          .filter((e) => e.target === n.id)
-          .map((e) => e.source);
-        // Include the new connection
-        if (connection.target === n.id) {
-          newInputs.push(connection.source);
-        }
+        const newInputs = edges.filter((e) => e.target === n.id).map((e) => e.source);
+        if (connection.target === n.id) newInputs.push(connection.source);
         return { ...n, inputs: [...new Set(newInputs)] };
       });
       onChainChange({ ...chain, nodes: updatedNodes });
+      pushHistory();
     },
-    [edges, chain, setEdges, onChainChange]
+    [edges, chain, setEdges, onChainChange, pushHistory]
   );
 
   const onNodeClick = useCallback(
-    (_e: React.MouseEvent, node: Node) => {
-      onNodeSelect(node.id);
-    },
+    (_e: React.MouseEvent, node: Node) => { onNodeSelect(node.id); },
     [onNodeSelect]
   );
 
@@ -104,8 +143,7 @@ export default function Canvas({
           human-control <span style={{ color: "var(--text-primary)" }}>~ $</span>
         </span>
         <span style={{ fontSize: 14, opacity: 0.6 }}>describe workflow</span>
-        <span style={{
-          display: "inline-block", width: 10, height: 18,
+        <span style={{ display: "inline-block", width: 10, height: 18,
           background: "var(--text-primary)", animation: "blink 1s step-end infinite",
         }} />
       </div>
@@ -114,14 +152,10 @@ export default function Canvas({
 
   return (
     <ReactFlow
-      nodes={nodes}
-      edges={edges}
-      onNodesChange={onNodesChange}
-      onEdgesChange={onEdgesChange}
-      onConnect={onConnect}
-      onNodeClick={onNodeClick}
-      nodeTypes={nodeTypes}
-      fitView
+      nodes={nodes} edges={edges}
+      onNodesChange={onNodesChange} onEdgesChange={onEdgesChange}
+      onConnect={onConnect} onNodeClick={onNodeClick}
+      nodeTypes={nodeTypes} fitView deleteKeyCode={["Delete", "Backspace"]}
       style={{ background: "var(--bg-canvas)" }}
     >
       <Background color="var(--border)" gap={20} />
